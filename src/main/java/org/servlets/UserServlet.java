@@ -1,10 +1,14 @@
 package org.servlets;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dao.UserDAO;
 import org.dao.UserDAOImpl;
+import org.models.ErrorDetails;
 import org.models.User;
 import org.models.Users;
+import org.parsers.ErrorDetailsConverter;
 import org.parsers.UserConverter;
 
 import javax.servlet.http.HttpServlet;
@@ -16,8 +20,10 @@ import java.io.PrintWriter;
 import java.util.Optional;
 
 public class UserServlet extends HttpServlet {
+    private static final Logger logger = LogManager.getLogger(UserServlet.class);
+
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             UserDAO userDAO = new UserDAOImpl();
             if (request.getParameter("id") != null) {
@@ -34,8 +40,15 @@ public class UserServlet extends HttpServlet {
                         writer.write(json);
                     }
                 } else {
-                    System.err.println("Couldn't get the user");
                     response.setStatus(500);
+                    logger.error("Couldn't get the user");
+                    ErrorDetails error = new ErrorDetails("Couldn't get the user");
+                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                    String errorJson = errorDetailsConverter.convert(error);
+                    response.setContentType("application/json");
+                    try (PrintWriter writer = response.getWriter()) {
+                        writer.write(errorJson);
+                    }
                 }
             } else {
                 Users allUsers = userDAO.getAllUsers();
@@ -51,17 +64,31 @@ public class UserServlet extends HttpServlet {
                     }
                 } else {
                     response.setStatus(500);
-                    System.err.println("Couldn't convert users to json");
+                    logger.error("Couldn't get all users");
+                    ErrorDetails error = new ErrorDetails("Couldn't get all users");
+                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                    String errorJson = errorDetailsConverter.convert(error);
+                    response.setContentType("application/json");
+                    try (PrintWriter writer = response.getWriter()) {
+                        writer.write(errorJson);
+                    }
                 }
             }
         } catch (Exception exception) {
-            System.err.println("Error in doGet");
-            exception.printStackTrace();
+            response.setStatus(500);
+            logger.error("Error in doGet");
+            ErrorDetails error = new ErrorDetails("Error in doGet");
+            ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+            String errorJson = errorDetailsConverter.convert(error);
+            response.setContentType("application/json");
+            try (PrintWriter writer = response.getWriter()) {
+                writer.write(errorJson);
+            }
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             String body = getBody(request);
 
@@ -71,7 +98,7 @@ public class UserServlet extends HttpServlet {
             UserDAO userDAO = new UserDAOImpl();
             int userId = userDAO.createUser(user);
             if (userId != 0) {
-                System.out.println("Created user id: " + userId);
+                logger.info("Created user id: {}", userId);
                 user.setId(userId);
 
                 String json = userConverter.convertUserToJson(user);
@@ -85,34 +112,41 @@ public class UserServlet extends HttpServlet {
                     }
                 } else {
                     response.setStatus(500);
-                    System.err.println("Couldn't convert updated user to json");
+                    logger.error("Couldn't convert the updated user to json");
+                    ErrorDetails error = new ErrorDetails("Couldn't convert the updated user to json");
+                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                    String errorJson = errorDetailsConverter.convert(error);
+                    response.setContentType("application/json");
+                    try (PrintWriter writer = response.getWriter()) {
+                        writer.write(errorJson);
+                    }
                 }
             } else {
                 response.setStatus(500);
-                System.err.println("Couldn't convert the user");
+                logger.error("Couldn't create a user");
+                ErrorDetails error = new ErrorDetails("Couldn't create a user");
+                ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                String errorJson = errorDetailsConverter.convert(error);
+                response.setContentType("application/json");
+                try (PrintWriter writer = response.getWriter()) {
+                    writer.write(errorJson);
+                }
             }
         } catch (Exception exception) {
-            System.err.println("Error in doPost");
-            exception.printStackTrace();
-        }
-    }
-
-    public static String getBody(HttpServletRequest request) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-
-        try (BufferedReader bufferedReader = request.getReader()) {
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuilder.append(line);
+            response.setStatus(500);
+            logger.error("Error in doPost");
+            ErrorDetails error = new ErrorDetails("Error in doPost");
+            ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+            String errorJson = errorDetailsConverter.convert(error);
+            response.setContentType("application/json");
+            try (PrintWriter writer = response.getWriter()) {
+                writer.write(errorJson);
             }
-        } catch (IOException exception) {
-            throw new IOException("Error reading the request payload", exception);
         }
-        return stringBuilder.toString();
     }
 
     @Override
-    protected void doPut(HttpServletRequest request, HttpServletResponse response) {
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             String body = getBody(request);
             UserConverter userConverter = new UserConverter();
@@ -131,37 +165,86 @@ public class UserServlet extends HttpServlet {
                     }
                 } else {
                     response.setStatus(500);
-                    System.err.println("Couldn't convert the user");
+                    logger.error("Couldn't convert the user");
+                    ErrorDetails error = new ErrorDetails("Couldn't convert the user");
+                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                    String errorJson = errorDetailsConverter.convert(error);
+                    response.setContentType("application/json");
+                    try (PrintWriter writer = response.getWriter()) {
+                        writer.write(errorJson);
+                    }
                 }
             }
         } catch (Exception exception) {
-            System.err.println("Error in doPut");
-            exception.printStackTrace();
+            response.setStatus(500);
+            logger.error("Error in doPut");
+            ErrorDetails error = new ErrorDetails("Error in doPut");
+            ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+            String errorJson = errorDetailsConverter.convert(error);
+            response.setContentType("application/json");
+            try (PrintWriter writer = response.getWriter()) {
+                writer.write(errorJson);
+            }
         }
     }
 
     @Override
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response) {
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             String idParameter = request.getParameter("id");
-            if (!idParameter.isEmpty()) {
+            if (idParameter != null) {
                 int id = Integer.parseInt(idParameter);
                 UserDAO userDAO = new UserDAOImpl();
                 int i = userDAO.deleteUser(id);
                 if (i == 1) {
                     response.setStatus(200);
-                    System.out.println("Successfully deleted user with the id " + id);
+                    logger.info("Successfully deleted user with the id {}", id);
                 } else {
                     response.setStatus(500);
-                    System.out.println("Couldn't delete a user with the id " + id);
+                    logger.error("Couldn't delete a user with the id {}", id);
+                    ErrorDetails error = new ErrorDetails("Couldn't delete a user with the id " + id);
+                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                    String errorJson = errorDetailsConverter.convert(error);
+                    response.setContentType("application/json");
+                    try (PrintWriter writer = response.getWriter()) {
+                        writer.write(errorJson);
+                    }
                 }
             } else {
-                System.err.println("No id provided");
                 response.setStatus(500);
+                logger.error("No id provided");
+                ErrorDetails error = new ErrorDetails("No id provided");
+                ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                String errorJson = errorDetailsConverter.convert(error);
+                response.setContentType("application/json");
+                try (PrintWriter writer = response.getWriter()) {
+                    writer.write(errorJson);
+                }
             }
-        }catch (Exception exception){
-            System.err.println("Error in doDelete");
-            exception.printStackTrace();
+        } catch (Exception exception) {
+            response.setStatus(500);
+            logger.error("Error in doDelete");
+            ErrorDetails error = new ErrorDetails("Error in doDelete");
+            ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+            String errorJson = errorDetailsConverter.convert(error);
+            response.setContentType("application/json");
+            try (PrintWriter writer = response.getWriter()) {
+                writer.write(errorJson);
+            }
         }
+    }
+
+    private static String getBody(HttpServletRequest request) throws IOException {
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+
+        try (BufferedReader bufferedReader = request.getReader()) {
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException exception) {
+            throw new IOException("Error reading the request payload", exception);
+        }
+        return stringBuilder.toString();
     }
 }

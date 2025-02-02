@@ -1,5 +1,7 @@
 package org.dao;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.models.User;
 import org.models.Users;
 
@@ -15,6 +17,8 @@ public class UserDAOImpl implements UserDAO {
     private static final String GET_ALL_USERS = "select * from users";
     private static final String GET_USER = "select * from users where id = ?";
     private static final String DELETE_USER = "delete from users where id = ?";
+    private static final Logger logger = LogManager.getLogger(UserDAOImpl.class);
+
     @Override
     public int createUser(User user) {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
@@ -33,8 +37,7 @@ public class UserDAOImpl implements UserDAO {
                 throw new Exception("Couldn't get generated keys");
             }
         } catch (Exception exception) {
-            System.err.println("Error while creating user");
-            exception.printStackTrace();
+            logger.error("Error while creating user", exception);
             return 0;
         }
     }
@@ -48,11 +51,9 @@ public class UserDAOImpl implements UserDAO {
             java.sql.Date birthDate = new java.sql.Date(user.getBirthDate().getTime());
             stmtUpdateUser.setDate(3, birthDate);
             stmtUpdateUser.setInt(4, user.getId());
-            stmtUpdateUser.executeUpdate();
-            return 1;
+            return stmtUpdateUser.executeUpdate();
         } catch (Exception exception) {
-            System.err.println("Error while updating user");
-            exception.printStackTrace();
+            logger.error("Error while updating user", exception);
             return 0;
         }
     }
@@ -75,12 +76,11 @@ public class UserDAOImpl implements UserDAO {
             if (!allUsers.isEmpty()) {
                 return new Users(allUsers);
             } else {
-                System.out.println("There are no users in the database");
+                logger.warn("No users have been extracted from the database");
                 return (Users) Collections.emptyList();
             }
         } catch (Exception exception) {
-            System.err.println("Error while getting all users");
-            exception.printStackTrace();
+            logger.error("Error while getting all users", exception);
             return (Users) Collections.emptyList();
         }
     }
@@ -99,13 +99,12 @@ public class UserDAOImpl implements UserDAO {
 
                 User user = new User(id, name, age, birthDate);
                 return Optional.of(user);
-            }else{
-                System.out.println("Couldn't find a user with the provided id");
+            } else {
+                logger.error("Couldn't find a user with the provided id");
                 return Optional.empty();
             }
         } catch (Exception exception) {
-            System.err.println("Error while getting a user");
-            exception.printStackTrace();
+            logger.error("Error while getting a user", exception);
             return Optional.empty();
         }
     }
@@ -114,14 +113,12 @@ public class UserDAOImpl implements UserDAO {
     public int deleteUser(int id) {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement stmtDeleteUser = connection.prepareStatement(DELETE_USER)) {
-            stmtDeleteUser.setInt(1,id);
+            stmtDeleteUser.setInt(1, id);
             return stmtDeleteUser.executeUpdate();
-        }catch (Exception exception){
-            System.err.println("Error while trying to delete user");
+        } catch (Exception exception) {
+            logger.error("Error while trying to delete user", exception);
             return 0;
         }
     }
-
-
 }
 
