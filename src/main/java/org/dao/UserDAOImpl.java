@@ -59,7 +59,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
-    public Users getAllUsers() {
+    public Users getAllUsers() throws Exception {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement stmtGetAllUsers = connection.prepareStatement(GET_ALL_USERS)) {
             ResultSet resultSet = stmtGetAllUsers.executeQuery();
@@ -73,20 +73,12 @@ public class UserDAOImpl implements UserDAO {
                 User user = new User(id, name, age, birthDate);
                 allUsers.add(user);
             }
-            if (!allUsers.isEmpty()) {
-                return new Users(allUsers);
-            } else {
-                logger.warn("No users have been extracted from the database");
-                return (Users) Collections.emptyList();
-            }
-        } catch (Exception exception) {
-            logger.error("Error while getting all users", exception);
-            return (Users) Collections.emptyList();
+            return new Users(allUsers);
         }
     }
 
     @Override
-    public Optional<User> getUser(int id) {
+    public Optional<User> getUser(int id) throws Exception {
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
              PreparedStatement stmtGetAllUsers = connection.prepareStatement(GET_USER)) {
             stmtGetAllUsers.setInt(1, id);
@@ -100,12 +92,9 @@ public class UserDAOImpl implements UserDAO {
                 User user = new User(id, name, age, birthDate);
                 return Optional.of(user);
             } else {
-                logger.error("Couldn't find a user with the provided id");
+                logger.warn("Couldn't find a user with the provided id {}", id);
                 return Optional.empty();
             }
-        } catch (Exception exception) {
-            logger.error("Error while getting a user", exception);
-            return Optional.empty();
         }
     }
 

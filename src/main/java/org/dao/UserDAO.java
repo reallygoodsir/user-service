@@ -10,9 +10,9 @@ public interface UserDAO extends GeneralDAO {
 
     int updateUser(User user);
 
-    Users getAllUsers();
+    Users getAllUsers() throws Exception;
 
-    Optional<User> getUser(int id);
+    Optional<User> getUser(int id) throws Exception;
 
     int deleteUser(int id);
 }

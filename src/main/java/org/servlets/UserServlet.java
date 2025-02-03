@@ -1,6 +1,7 @@
 package org.servlets;
 
-
+import org.validators.SecurityValidator;
+import org.validators.UserValidator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dao.UserDAO;
@@ -24,50 +25,65 @@ public class UserServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            UserDAO userDAO = new UserDAOImpl();
-            if (request.getParameter("id") != null) {
-                Optional<User> optionalUser = userDAO.getUser(Integer.parseInt(request.getParameter("id")));
-                if (optionalUser.isPresent()) {
-                    User user = optionalUser.get();
-                    UserConverter userConverter = new UserConverter();
-                    String json = userConverter.convertUserToJson(user);
-                    response.setStatus(200);
-                    response.setContentType("application/json");
-                    response.setCharacterEncoding("UTF-8");
+        String token = request.getHeader("Authorization");
+        SecurityValidator securityValidator = new SecurityValidator();
+        if (!securityValidator.isValid(token)) {
+            logger.error("Token not valid");
+            ErrorDetails error = new ErrorDetails("The call is not allowed");
+            ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+            String errorJson = errorDetailsConverter.convert(error);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            try (PrintWriter writer = response.getWriter()) {
+                writer.write(errorJson);
+            }
+        }
 
-                    try (PrintWriter writer = response.getWriter()) {
-                        writer.write(json);
-                    }
-                } else {
-                    response.setStatus(500);
-                    logger.error("Couldn't get the user");
-                    ErrorDetails error = new ErrorDetails("Couldn't get the user");
-                    ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
-                    String errorJson = errorDetailsConverter.convert(error);
-                    response.setContentType("application/json");
-                    try (PrintWriter writer = response.getWriter()) {
-                        writer.write(errorJson);
-                    }
+        try {
+            String userId = request.getParameter("id");
+            if (userId == null || userId.isEmpty()) {
+                UserDAO userDAO = new UserDAOImpl();
+                Users users = userDAO.getAllUsers();
+                UserConverter userConverter = new UserConverter();
+                String json = userConverter.convertUsersToJson(users);
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                try (PrintWriter writer = response.getWriter()) {
+                    writer.write(json);
                 }
             } else {
-                Users allUsers = userDAO.getAllUsers();
-                if (!allUsers.getUsers().isEmpty()) {
-                    UserConverter userConverter = new UserConverter();
-                    String json = userConverter.convertUsersToJson(allUsers);
-                    response.setStatus(200);
-                    response.setContentType("application/json");
-                    response.setCharacterEncoding("UTF-8");
-
-                    try (PrintWriter writer = response.getWriter()) {
-                        writer.write(json);
+                UserValidator userValidator = new UserValidator();
+                if (userValidator.isPositiveNumber(userId)) {
+                    UserDAO userDAO = new UserDAOImpl();
+                    Optional<User> optionalUser = userDAO.getUser(Integer.parseInt(userId));
+                    if (optionalUser.isPresent()) {
+                        User user = optionalUser.get();
+                        UserConverter userConverter = new UserConverter();
+                        String json = userConverter.convertUserToJson(user);
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        try (PrintWriter writer = response.getWriter()) {
+                            writer.write(json);
+                        }
+                    } else {
+                        String errorMessage = "User does not exist with id " + userId;
+                        ErrorDetails error = new ErrorDetails(errorMessage);
+                        ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
+                        String errorJson = errorDetailsConverter.convert(error);
+                        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        response.setContentType("application/json");
+                        try (PrintWriter writer = response.getWriter()) {
+                            writer.write(errorJson);
+                        }
                     }
                 } else {
-                    response.setStatus(500);
-                    logger.error("Couldn't get all users");
-                    ErrorDetails error = new ErrorDetails("Couldn't get all users");
+                    String errorMessage = "User id must be positive number. Current value is not correct: " + userId;
+                    ErrorDetails error = new ErrorDetails(errorMessage);
                     ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
                     String errorJson = errorDetailsConverter.convert(error);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                     response.setContentType("application/json");
                     try (PrintWriter writer = response.getWriter()) {
                         writer.write(errorJson);
@@ -75,11 +91,11 @@ public class UserServlet extends HttpServlet {
                 }
             }
         } catch (Exception exception) {
-            response.setStatus(500);
-            logger.error("Error in doGet");
-            ErrorDetails error = new ErrorDetails("Error in doGet");
+            logger.error("Error in doGet", exception);
+            ErrorDetails error = new ErrorDetails("Error to get user(s)");
             ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
             String errorJson = errorDetailsConverter.convert(error);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setContentType("application/json");
             try (PrintWriter writer = response.getWriter()) {
                 writer.write(errorJson);
