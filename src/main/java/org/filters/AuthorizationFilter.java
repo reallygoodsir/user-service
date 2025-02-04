@@ -2,6 +2,8 @@ package org.filters;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.config.Config;
+import org.config.ConfigLoader;
 import org.models.ErrorDetails;
 import org.converters.ErrorDetailsConverter;
 
@@ -23,7 +25,8 @@ public class AuthorizationFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
         String authorization = ((HttpServletRequest) servletRequest).getHeader("Authorization");
-        if (authorization == null || !authorization.equals("1234567890qawsedrftgthyujkiol")) {
+        Config config = ConfigLoader.loadConfig();
+        if (authorization == null || !authorization.equals(config.getAuthorizationToken())) {
             LOGGER.error("Token not valid");
             ErrorDetails error = new ErrorDetails("The call is not allowed");
             ErrorDetailsConverter errorDetailsConverter = new ErrorDetailsConverter();
