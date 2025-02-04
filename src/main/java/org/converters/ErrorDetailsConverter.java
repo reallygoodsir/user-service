@@ -1,4 +1,4 @@
-package org.parsers;
+package org.converters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;

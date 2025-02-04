@@ -1,4 +1,4 @@
-package org.parsers;
+package org.converters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat;
 public class UserConverter {
     private static final Logger logger = LogManager.getLogger(UserConverter.class);
 
-    public User convert(String jsonContent) {
+    public User convertToUser(String jsonContent) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
